@@ -19,10 +19,12 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(dialog,SIGNAL(fileSelected(QString)),this,SLOT(dialogFileSelected(QString)));
     connect(ui->browseBtn,SIGNAL(clicked(bool)),this,SLOT(browseBtnClicked()));
     connect(ui->loadBtn,SIGNAL(clicked(bool)),this,SLOT(loadBtnClicked()));
+    connect(ui->saveAsBtn,SIGNAL(clicked(bool)),this,SLOT(saveAsBtnClicked()));
     connect(ui->fitToWindowBtn,SIGNAL(clicked(bool)),this,SLOT(fitToWindow()));
     connect(ui->resetZoomBtn,SIGNAL(clicked(bool)),this,SLOT(resetZoom()));
     connect(ui->resetBtn,SIGNAL(clicked(bool)),this,SLOT(resetBtnClicked()));
     connect(ui->autoClipBtn,SIGNAL(clicked(bool)),this,SLOT(autoClipBtnClicked()));
+    originalImageData=0;
     image=0;
     scene=new QGraphicsScene();
     pixmapItem=new QGraphicsPixmapItem();
@@ -69,6 +71,16 @@ void MainWindow::loadBtnClicked()
     fitToWindow();
 }
 
+void MainWindow::saveAsBtnClicked()
+{
+    if(originalImageData==0)
+        return;
+    QString path=QFileDialog::getSaveFileName(this,"Save as...",QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),"JPG image (*.jpg);;PNG image (*.png);;GIF image (*.gif);;Bitmap (*.bmp)");
+    if(path=="")
+        return;
+    image->save(path,0,100);
+}
+
 void MainWindow::fitToWindow()
 {
     if(image==0||image->isNull())
@@ -94,6 +106,7 @@ void MainWindow::resetZoom()
 void MainWindow::dialogFileSelected(QString path)
 {
     ui->pathBox->setText(path);
+    ui->loadBtn->click();
 }
 
 void MainWindow::resetBtnClicked()
@@ -155,7 +168,7 @@ void MainWindow::autoClipBtnClicked()
             uint32_t alpha=getAlpha(color);
             if(alpha==0)
             {
-                originalImageData[pos]=color;
+                newImageData[pos]=color;
                 continue;
             }
             // Check if pixel matches criteria
@@ -177,7 +190,7 @@ void MainWindow::autoClipBtnClicked()
 
             for(int _y=lowerLimitY;_y<=upperLimitY;_y++)
             {
-                int _offset=_y*originalImageHeight;
+                int _offset=_y*originalImageWidth;
                 for(int _x=lowerLimitX;_x<=upperLimitX;_x++)
                 {
                     double distance=sqrt(pow((double)(x-_x),2.0)+pow((double)(y-_y),2.0));
